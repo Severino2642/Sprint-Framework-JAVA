@@ -12,8 +12,17 @@ import mg.itu.framework.sprint.utils.CheckController;
 public class FrontController extends HttpServlet{
 
     private ArrayList<Class<?>> classController;
-    
-    public void init() throws ServletException{
+    private boolean checked = false;
+
+    public void setChecked (boolean checked){
+        this.checked = checked;
+    }
+
+    public boolean isChecked (){
+        return this.checked;
+    }
+
+    public void initValue() throws ServletException{
         try {
             String packageCtrl = this.getInitParameter("packageName");
             this.setClassController(CheckController.getControllerClasses(packageCtrl));
@@ -21,6 +30,13 @@ public class FrontController extends HttpServlet{
             e.printStackTrace();
         }
     }
+
+    // public void init() throws ServletException{
+    //     if (!this.isChecked()) {
+    //         this.initValue();
+    //         this.setChecked(true);
+    //     }
+    // }
 
     public ArrayList<Class<?>> getClassController() {
         return classController;
@@ -30,9 +46,14 @@ public class FrontController extends HttpServlet{
         this.classController = classController;
     }
 
-    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException{
+    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException , ServletException{
         PrintWriter out = response.getWriter();
         out.println("URL : " + request.getRequestURI());
+
+        if (!this.isChecked()) {
+            this.initValue();
+            this.setChecked(true);
+        }
 
         ArrayList<Class<?>> classes = new ArrayList<>();
         if (classes != null) {
