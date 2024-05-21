@@ -7,19 +7,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+
 import mg.itu.framework.sprint.utils.CheckController;
+import mg.itu.framework.sprint.utils.HashMap;
 
 public class FrontController extends HttpServlet{
 
     private ArrayList<Class<?>> classController;
-    private boolean checked = false;
+    private ArrayList<HashMap> maps;
 
-    public void setChecked (boolean checked){
-        this.checked = checked;
+    public ArrayList<HashMap> getMaps() {
+        return maps;
     }
 
-    public boolean isChecked (){
-        return this.checked;
+    public void setMaps(ArrayList<HashMap> maps) {
+        this.maps = maps;
     }
 
     public void initValue() throws ServletException{
@@ -31,12 +33,17 @@ public class FrontController extends HttpServlet{
         }
     }
 
-    // public void init() throws ServletException{
-    //     if (!this.isChecked()) {
-    //         this.initValue();
-    //         this.setChecked(true);
-    //     }
-    // }
+    public void init() throws ServletException {
+        this.initValue();
+        this.setMaps(new HashMap().checkMaps(this.getClassController()));
+        if (new HashMap().verifRepetition(this.getMaps())){
+            try {
+                throw new Exception("Il y a une repetition lors de l'annotation de vos methods");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     public ArrayList<Class<?>> getClassController() {
         return classController;
@@ -49,22 +56,27 @@ public class FrontController extends HttpServlet{
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException , ServletException{
         PrintWriter out = response.getWriter();
         out.println("URL : " + request.getRequestURI());
-
-        if (!this.isChecked()) {
-            this.initValue();
-            this.setChecked(true);
-        }
-
-        ArrayList<Class<?>> classes = new ArrayList<>();
-        if (classes != null) {
-            classes = this.getClassController();
-
-            out.println("Controllers : ");
-            for (Class<?> classe : classes) {
-                out.println("- " + classe.getSimpleName());
+        String url = new HashMap().makeUrl(request.getRequestURI());
+        HashMap map = new HashMap().findByUrl(this.getMaps(),url);
+        if (map == null){
+            try {
+                out.println("Le chemin indiquer est introuvable");
+                throw new Exception("Le chemin indiquer est introuvable !");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
+        if (map != null){
+            out.println("HashMap URL :"+ map.getUrl());
+            out.println("ClassName : "+map.getMapping().getClassName());
+            out.println("MethodName : "+map.getMapping().getMethodName());
+        }
+
+//        for (HashMap map:maps) {
+//            out.println( map.getUrl() +" : "+map.getMapping().getClassName()+" && "+map.getMapping().getMethodName());
+//        }
     }
+
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         this.processRequest(request,response);
@@ -73,5 +85,6 @@ public class FrontController extends HttpServlet{
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         this.processRequest(request,response);
     }
+
 
 }
