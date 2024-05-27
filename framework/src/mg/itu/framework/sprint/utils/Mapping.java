@@ -1,5 +1,12 @@
 package mg.itu.framework.sprint.utils;
 
+import mg.itu.framework.sprint.annotation.Get;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 public class Mapping {
     String className;
     String methodName;
@@ -28,4 +35,43 @@ public class Mapping {
         this.methodName = methodName;
     }
 
+    public HashMap<String,Mapping> checkMaps (ArrayList<Class<?>> controlers){
+        HashMap<String,Mapping> result = new HashMap<String,Mapping>();
+        if (controlers != null) {
+            for (Class<?> classe : controlers) {
+                Method[] methods = classe.getDeclaredMethods();
+                for (int i=0;i< methods.length;i++){
+                    if (methods[i].isAnnotationPresent(Get.class)) {
+                        Annotation annotation = methods[i].getAnnotation(Get.class);
+                        String url = ((Get) annotation).value();
+                        if (result.get(url)==null){
+                            Mapping mapping = new Mapping(classe.getSimpleName(),methods[i].getName());
+                            result.put(url,mapping);
+                        }
+                        else {
+                            return null;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public Mapping searchUrl(HashMap<String,Mapping> maps, String url){
+        Mapping result = null;
+        String [] chemin = url.split("/");
+        String new_url = "";
+        for (int i=chemin.length-1;i>=0 ;i--){
+            if (i<chemin.length-1){
+                new_url = "/"+new_url;
+            }
+            new_url = chemin[i]+new_url;
+            Mapping map = maps.get(new_url);
+            if (map!=null){
+                result = map;
+            }
+        }
+        return result;
+    }
 }

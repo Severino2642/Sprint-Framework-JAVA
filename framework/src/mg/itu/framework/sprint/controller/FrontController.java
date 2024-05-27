@@ -7,20 +7,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import mg.itu.framework.sprint.utils.CheckController;
-import mg.itu.framework.sprint.utils.HashMap;
+import mg.itu.framework.sprint.utils.Mapping;
 
 public class FrontController extends HttpServlet{
 
     private ArrayList<Class<?>> classController;
-    private ArrayList<HashMap> maps;
+    private HashMap<String, Mapping> maps;
 
-    public ArrayList<HashMap> getMaps() {
+    public HashMap<String, Mapping> getMaps() {
         return maps;
     }
 
-    public void setMaps(ArrayList<HashMap> maps) {
+    public void setMaps(HashMap<String, Mapping> maps) {
         this.maps = maps;
     }
 
@@ -34,14 +35,17 @@ public class FrontController extends HttpServlet{
     }
 
     public void init() throws ServletException {
-        this.initValue();
-        this.setMaps(new HashMap().checkMaps(this.getClassController()));
-        if (new HashMap().verifRepetition(this.getMaps())){
-            try {
-                throw new Exception("Il y a une repetition lors de l'annotation de vos methods");
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        try {
+            this.initValue();
+            HashMap<String,Mapping> maps = new Mapping().checkMaps(this.getClassController());
+            if (maps!=null){
+                this.setMaps(maps);
             }
+            else {
+                throw new Exception("Il y a une repetition lors de l'annotation de vos methods");   
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -56,25 +60,18 @@ public class FrontController extends HttpServlet{
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException , ServletException{
         PrintWriter out = response.getWriter();
         out.println("URL : " + request.getRequestURI());
-        String url = new HashMap().makeUrl(request.getRequestURI());
-        HashMap map = new HashMap().findByUrl(this.getMaps(),url);
-        if (map == null){
-            try {
-                out.println("Le chemin indiquer est introuvable");
-                throw new Exception("Le chemin indiquer est introuvable !");
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        Mapping map = new Mapping().searchUrl(this.getMaps(),request.getRequestURI());
+        try {
+            if (map != null){
+                out.println("ClassName : "+map.getClassName());
+                out.println("MethodName : "+map.getMethodName());
             }
+            else {
+                out.println("Le chemin indiquer est introuvable");   
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        if (map != null){
-            out.println("HashMap URL :"+ map.getUrl());
-            out.println("ClassName : "+map.getMapping().getClassName());
-            out.println("MethodName : "+map.getMapping().getMethodName());
-        }
-
-//        for (HashMap map:maps) {
-//            out.println( map.getUrl() +" : "+map.getMapping().getClassName()+" && "+map.getMapping().getMethodName());
-//        }
     }
 
 
