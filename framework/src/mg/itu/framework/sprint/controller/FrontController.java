@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -65,6 +67,8 @@ public class FrontController extends HttpServlet{
             if (map != null){
                 out.println("ClassName : "+map.getClassName());
                 out.println("MethodName : "+map.getMethodName());
+                out.println("exe");
+                this.executeMethod(map,out);
             }
             else {
                 out.println("Le chemin indiquer est introuvable");   
@@ -83,5 +87,11 @@ public class FrontController extends HttpServlet{
         this.processRequest(request,response);
     }
 
-
+    public void executeMethod (Mapping map,PrintWriter out) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+        String packageCtrl = this.getInitParameter("packageName");
+        Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
+        Method method= clazz.getDeclaredMethod(map.getMethodName());
+        Object obj = clazz.newInstance();
+        out.println("Execute method : "+ method.invoke(obj).toString());
+    }
 }
