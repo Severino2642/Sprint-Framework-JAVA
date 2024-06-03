@@ -26,12 +26,12 @@ jar -cf %archive% .\mg
 cd ..
 xcopy "temp\%archive%" "%dossier_principal%" /y
 
-rem Command to copy the jar to Test librairie
-rem set destination=..\..\..\Test\lib
-rem if exist "%destination%%archive%" (
-rem  del /S /Q "%destination%%archive%"
-rem )
-rem xcopy "%archive%" "%destination%" /y
+Command to copy the jar to Test librairie
+set destination=..\..\..\Test\lib
+if exist "%destination%%archive%" (
+ del /S /Q "%destination%%archive%"
+)
+xcopy "%archive%" "%destination%" /y
 
 rmdir /S /Q %dossier_temp%
 
