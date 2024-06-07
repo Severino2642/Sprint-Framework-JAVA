@@ -41,12 +41,16 @@ public class FrontController extends HttpServlet{
 
     public void init() throws ServletException {
         try {
+            String packageCtrl = this.getInitParameter("packageName");
             this.initValue();
             HashMap<String,Mapping> maps = new Mapping().checkMaps(this.getClassController());
             if (maps!=null){
                 this.setMaps(maps);
             }
-            else {
+            if (this.getClassController().size() == 0){
+                throw new Exception("le package " +packageCtrl+ " est vide ou n'existe pas");
+            }
+            if (maps==null){
                 throw new Exception("Il y a une repetition lors de l'annotation de vos methods");   
             }
         } catch (Exception e) {
@@ -74,10 +78,10 @@ public class FrontController extends HttpServlet{
                 this.executeMethod(map,request,response);
             }
             else {
-                out.println("Le chemin indiquer est introuvable");   
+                throw new Exception("404 not found");
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            out.println(e.getMessage());
         }
     }
 
@@ -99,18 +103,17 @@ public class FrontController extends HttpServlet{
             if (method.getReturnType() == String.class || method.getReturnType() == ModelView.class){
                 Object obj = clazz.newInstance();
                 if (method.getReturnType() == String.class){
-                    out.println("Execute method : "+ method.invoke(obj).toString());
+                    out.println("Execute methods : "+ method.invoke(obj).toString());
                 }
                 if (method.getReturnType() == ModelView.class){
                     this.sendModelView((ModelView) method.invoke(obj),request,response);
                 }
             }
             else {
-                out.println("Le chemin indiquer est introuvable");
                 throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            out.println(e.getMessage());
         }
     }
 
@@ -121,8 +124,8 @@ public class FrontController extends HttpServlet{
             Object value = data.getValue();
             request.setAttribute(name,value);
         }
-        String url = "/"+donnee.getUrl();
-        RequestDispatcher dispat = request.getServletContext().getRequestDispatcher(url);
+        String url = request.getContextPath()+"/"+donnee.getUrl();
+        RequestDispatcher dispat = request.getServletContext().getRequestDispatcher("/"+donnee.getUrl());
         dispat.forward(request,response);
     }
 }
