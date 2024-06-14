@@ -35,7 +35,7 @@ public class Mapping {
         this.methodName = methodName;
     }
 
-    public HashMap<String,Mapping> checkMaps (ArrayList<Class<?>> controlers){
+    public HashMap<String,Mapping> checkMaps (ArrayList<Class<?>> controlers) throws Exception {
         HashMap<String,Mapping> result = new HashMap<String,Mapping>();
         if (controlers != null) {
             for (Class<?> classe : controlers) {
@@ -49,7 +49,7 @@ public class Mapping {
                             result.put(url,mapping);
                         }
                         else {
-                            return null;
+                            throw new Exception("Il y a une repetition lors de l'annotation de vos methods");
                         }
                     }
                 }
@@ -58,7 +58,7 @@ public class Mapping {
         return result;
     }
 
-    public Mapping searchUrl(HashMap<String,Mapping> maps, String url){
+    public Mapping searchUrl(HashMap<String,Mapping> maps, String url) throws Exception {
         Mapping result = null;
         String [] chemin = url.split("/");
         String new_url = "";
@@ -71,6 +71,9 @@ public class Mapping {
             if (map!=null){
                 result = map;
             }
+        }
+        if (result == null){
+            throw new Exception("404 not found");
         }
         return result;
     }
