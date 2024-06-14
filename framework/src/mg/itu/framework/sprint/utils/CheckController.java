@@ -31,7 +31,7 @@ public class CheckController {
         return classes;
     }
 
-    public static ArrayList<Class<?>> getControllerClasses(String packageName) throws ClassNotFoundException, IOException {
+    public static ArrayList<Class<?>> getControllerClasses(String packageName) throws Exception {
         ArrayList<Class<?>> classes = getClasses(packageName);
         ArrayList<Class<?>> result = new ArrayList<Class<?>>();
         
@@ -41,6 +41,9 @@ public class CheckController {
             }
         }
 
+        if (result.size() == 0){
+            throw new Exception("le package " +packageName+ " est vide ou n'existe pas");
+        }
         return result;
     }
 
