@@ -20,7 +20,7 @@ set src=temp\*.java
 set mainPkg=.\mg
 set archive=%projet%.jar
 
-javac -d %dossier_temp% %src%
+javac -cp ..\lib\* -g -d %dossier_temp% %src%
 cd %dossier_temp%
 jar -cf %archive% .\mg
 cd ..
@@ -36,3 +36,4 @@ xcopy "%archive%" "%destination%" /y
 rmdir /S /Q %dossier_temp%
 
 endlocal
+pause
