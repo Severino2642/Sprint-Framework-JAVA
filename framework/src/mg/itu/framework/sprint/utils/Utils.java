@@ -1,5 +1,6 @@
 package mg.itu.framework.sprint.utils;
 
+import com.google.gson.Gson;
 import com.thoughtworks.paranamer.AdaptiveParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 import jakarta.servlet.RequestDispatcher;
@@ -8,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.framework.sprint.annotation.Argument;
 import mg.itu.framework.sprint.annotation.Get;
+import mg.itu.framework.sprint.annotation.RestAPI;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,30 +29,71 @@ public class Utils {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
     }
 
+    public void addSession(Object obj,HttpServletRequest request,HttpServletResponse response) throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, IOException {
+        Field [] attributs = obj.getClass().getDeclaredFields();
+        PrintWriter out = response.getWriter();
+        for (Field attr : attributs){
+            if(attr.getType() == MySession.class){
+                String method_name = "set"+this.maj(attr.getName());
+                MySession session = new MySession(request.getSession());
+                Object [] arguments = new Object[1];
+                arguments[0] = session;
+                out.println("1 : "+attr.getName());
+                obj.getClass().getDeclaredMethod(method_name, MySession.class).invoke(obj,session);
+                out.println("2 : "+attr.getName());
+                break;
+            }
+        }
+    }
+
     public void executeMethod (String packageCtrl,Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
         Object obj = clazz.newInstance();
+        this.addSession(obj,request,response);
         Method method= this.getMethod(obj.getClass().getDeclaredMethods(),map.getMethodName());
         PrintWriter out = response.getWriter();
-        if (method.getReturnType() == String.class || method.getReturnType() == ModelView.class){
-            List<Object> MethodParameters = new ArrayList<>();
-            if (method.getParameters().length > 0) {
-                MethodParameters = this.prepareParameter(obj,method,request,response);
-                out.println("mandehaa24");
-                if (MethodParameters.size() != method.getParameters().length){
-                    throw new Exception("Le nombre de parametre est insuffisant !");
-                }
+
+        List<Object> MethodParameters = new ArrayList<>();
+        if (method.getParameters().length > 0) {
+            MethodParameters = this.prepareParameter(obj,method,request,response);
+            if (MethodParameters.size() != method.getParameters().length){
+                throw new Exception("Le nombre de parametre est insuffisant !");
             }
+        }
+        if (method.isAnnotationPresent(RestAPI.class)){
+            Object result = method.invoke(obj,MethodParameters.toArray(new Object[]{}));
+            this.returnResponse(result,method,request,response);
+        }
+        else {
             if (method.getReturnType() == String.class){
                 out.println("Execute methods : "+ method.invoke(obj,MethodParameters.toArray(new Object[]{})).toString());
             }
             if (method.getReturnType() == ModelView.class){
                 this.sendModelView((ModelView) method.invoke(obj,MethodParameters.toArray(new Object[]{})),request,response);
             }
+            else {
+                throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
+            }
         }
+    }
 
+    public void returnResponse(Object result,Method method,HttpServletRequest request,HttpServletResponse response) throws IOException {
+        Gson gson = new Gson();
+        if (method.getReturnType() == ModelView.class){
+            ModelView donnee = (ModelView) result;
+            for (Map.Entry<String,Object> data : donnee.getData().entrySet()){
+
+                String json = gson.toJson(data.getValue());
+                response.setContentType("text/json");
+//                response.setCharacterEncoding("UTF-8");
+                response.getWriter().println(json);
+            }
+        }
         else {
-            throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
+            String json = gson.toJson(result);
+            response.setContentType("text/json");
+//                response.setCharacterEncoding("UTF-8");
+            response.getWriter().println(json);
         }
     }
 
@@ -75,13 +118,21 @@ public class Utils {
             if (arg_annotation != null){
                 name_arg = ((Argument) arg_annotation).name();
             }
+//            if (arg_annotation == null ){
+//                throw new Exception("ETU002642 : L'argument "+name_arg+" n'est pas annoter ");
+//            }
             Class<?> clazz = argument[i].getType();
-            if (this.isObject(clazz)){
+
+            if(clazz == MySession.class){
+                MySession session = new MySession(request.getSession());
+                result.add(session);
+            }
+            if (this.isObject(clazz) && clazz != MySession.class){
                 out.println("arg :" +name_arg);
                 Object o = clazz.newInstance();
                 result.add(this.prepareObject(name_arg,o,request));
             }
-            else {
+            if (!this.isObject(clazz)) {
                 if(request.getParameter(name_arg)!=null){
                     result.add(this.castValueOfParameter(request.getParameter(name_arg),argument[i].getType()));
                 }
@@ -93,6 +144,7 @@ public class Utils {
 
     public void sendModelView (ModelView donnee,HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException {
         PrintWriter out = response.getWriter();
+
         for (Map.Entry<String,Object> data : donnee.getData().entrySet()){
             String name = data.getKey();
             Object value = data.getValue();
@@ -102,7 +154,6 @@ public class Utils {
         RequestDispatcher dispat = request.getServletContext().getRequestDispatcher("/"+donnee.getUrl());
         dispat.forward(request,response);
     }
-
 
     public String [] getParameterName(Method method){
         Paranamer paranamer = new AdaptiveParanamer();
@@ -163,4 +214,6 @@ public class Utils {
         }
         return true;
     }
+
+
 }
