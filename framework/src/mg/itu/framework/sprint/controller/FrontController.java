@@ -50,15 +50,20 @@ public class FrontController extends HttpServlet{
         this.classController = classController;
     }
 
-    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException , ServletException{
+    public void processRequest(HttpServletRequest request, HttpServletResponse response,String verb) throws IOException , ServletException{
         PrintWriter out = response.getWriter();
         out.println("URL : " + request.getRequestURI());
         try {
             Mapping map = new Mapping().searchUrl(this.getMaps(),request.getRequestURI());
-            out.println("ClassName : "+map.getClassName());
-            out.println("MethodName : "+map.getMethodName());
-            String packageCtrl = this.getInitParameter("packageName");
-            new Utils().executeMethod(packageCtrl,map,request,response);
+            if (map.verifMethodURL(verb)){
+                out.println("ClassName : "+map.getClassName());
+                out.println("MethodName : "+map.getMethodName());
+                String packageCtrl = this.getInitParameter("packageName");
+                new Utils().executeMethod(packageCtrl,map,request,response);
+            }
+            else {
+                throw new Exception("Vous utiliser des verbes differents pour une method identique");
+            }
         } catch (Exception e) {
             out.println(e.getMessage());
         }
@@ -66,10 +71,10 @@ public class FrontController extends HttpServlet{
 
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        this.processRequest(request,response);
+        this.processRequest(request,response,"GET");
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        this.processRequest(request,response);
+        this.processRequest(request,response,"POST");
     }
 }
