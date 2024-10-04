@@ -1,6 +1,8 @@
 package mg.itu.framework.sprint.utils;
 
 import mg.itu.framework.sprint.annotation.Get;
+import mg.itu.framework.sprint.annotation.Post;
+import mg.itu.framework.sprint.annotation.Url;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -11,6 +13,7 @@ import java.util.HashMap;
 public class Mapping {
     String className;
     String methodName;
+    String verb;
 
     public Mapping() {
     }
@@ -18,6 +21,12 @@ public class Mapping {
     public Mapping(String className, String methodName) {
         this.className = className;
         this.methodName = methodName;
+    }
+
+    public Mapping(String className, String methodName, String verb) {
+        this.className = className;
+        this.methodName = methodName;
+        this.verb = verb;
     }
 
     public String getClassName() {
@@ -36,17 +45,25 @@ public class Mapping {
         this.methodName = methodName;
     }
 
+    public String getVerb() {
+        return verb;
+    }
+
+    public void setVerb(String verb) {
+        this.verb = verb;
+    }
+
     public HashMap<String,Mapping> checkMaps (ArrayList<Class<?>> controlers) throws Exception {
         HashMap<String,Mapping> result = new HashMap<String,Mapping>();
         if (controlers != null) {
             for (Class<?> classe : controlers) {
                 Method[] methods = classe.getDeclaredMethods();
                 for (int i=0;i< methods.length;i++){
-                    if (methods[i].isAnnotationPresent(Get.class)) {
-                        Annotation annotation = methods[i].getAnnotation(Get.class);
-                        String url = ((Get) annotation).value();
+                    if (methods[i].isAnnotationPresent(Url.class)) {
+                        Annotation annotation = methods[i].getAnnotation(Url.class);
+                        String url = ((Url) annotation).value();
                         if (result.get(url)==null){
-                            Mapping mapping = new Mapping(classe.getSimpleName(),methods[i].getName());
+                            Mapping mapping = new Mapping(classe.getSimpleName(),methods[i].getName(),this.getVerbAnnotation(methods[i]));
                             result.put(url,mapping);
                         }
                         else {
@@ -75,6 +92,25 @@ public class Mapping {
         }
         if (result == null){
             throw new Exception("404 not found");
+        }
+        return result;
+    }
+
+    public boolean verifMethodURL (String methodName) {
+        boolean result = false;
+        if (this.getVerb().compareToIgnoreCase(methodName) == 0){
+            result = true;
+        }
+        return result;
+    }
+
+    public String getVerbAnnotation (Method m) {
+        String result = "GET";
+        if (m.isAnnotationPresent(Get.class)) {
+            result = "GET";
+        }
+        if (m.isAnnotationPresent(Post.class)) {
+            result = "POST";
         }
         return result;
     }

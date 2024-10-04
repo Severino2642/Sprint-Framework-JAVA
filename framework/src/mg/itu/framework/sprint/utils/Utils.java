@@ -7,9 +7,7 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import mg.itu.framework.sprint.annotation.Argument;
-import mg.itu.framework.sprint.annotation.Get;
-import mg.itu.framework.sprint.annotation.RestAPI;
+import mg.itu.framework.sprint.annotation.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -71,7 +69,7 @@ public class Utils {
             if (method.getReturnType() == ModelView.class){
                 this.sendModelView((ModelView) method.invoke(obj,MethodParameters.toArray(new Object[]{})),request,response);
             }
-            else {
+            if (method.getReturnType() != String.class && method.getReturnType() != ModelView.class){
                 throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
             }
         }
@@ -100,9 +98,10 @@ public class Utils {
     public Method getMethod(Method [] methods,String methodName){
         Method result = null;
         for (int i=0;i< methods.length;i++){
-            if (methods[i].isAnnotationPresent(Get.class) && methods[i].getName().compareTo(methodName)==0) {
+            if (methods[i].isAnnotationPresent(Url.class) && methods[i].getName().compareTo(methodName)==0) {
                 result=methods[i];
             }
+
         }
         return result;
     }
