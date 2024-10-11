@@ -9,24 +9,22 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class Mapping {
     String className;
-    String methodName;
-    String verb;
+    List<VerbAction> verb_action = new ArrayList<>();
 
     public Mapping() {
     }
 
-    public Mapping(String className, String methodName) {
+    public Mapping(String className, List<VerbAction> verb_action) {
         this.className = className;
-        this.methodName = methodName;
+        this.verb_action = verb_action;
     }
 
-    public Mapping(String className, String methodName, String verb) {
+    public Mapping(String className) {
         this.className = className;
-        this.methodName = methodName;
-        this.verb = verb;
     }
 
     public String getClassName() {
@@ -37,20 +35,25 @@ public class Mapping {
         this.className = className;
     }
 
-    public String getMethodName() {
-        return methodName;
+    public List<VerbAction> getVerb_action() {
+        return verb_action;
     }
 
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
+    public void setVerb_action(List<VerbAction> verb_action) {
+        this.verb_action = verb_action;
     }
 
-    public String getVerb() {
-        return verb;
+    public void addVerbAction(VerbAction verb_action) {
+        this.verb_action.add(verb_action);
     }
 
-    public void setVerb(String verb) {
-        this.verb = verb;
+    public boolean isExist (VerbAction verb_action) {
+        for (VerbAction vA : this.verb_action){
+            if (vA.getVerb().equals(verb_action.getVerb())){
+                return true;
+            }
+        }
+        return false;
     }
 
     public HashMap<String,Mapping> checkMaps (ArrayList<Class<?>> controlers) throws Exception {
@@ -62,12 +65,20 @@ public class Mapping {
                     if (methods[i].isAnnotationPresent(Url.class)) {
                         Annotation annotation = methods[i].getAnnotation(Url.class);
                         String url = ((Url) annotation).value();
-                        if (result.get(url)==null){
-                            Mapping mapping = new Mapping(classe.getSimpleName(),methods[i].getName(),this.getVerbAnnotation(methods[i]));
+                        Mapping map = result.get(url);
+                        if (map == null) {
+                            Mapping mapping = new Mapping(classe.getSimpleName());
+                            mapping.addVerbAction(new VerbAction(methods[i].getName(),this.getVerbAnnotation(methods[i])));
                             result.put(url,mapping);
                         }
                         else {
-                            throw new Exception("Il y a une repetition lors de l'annotation de vos methods");
+                            VerbAction verbAction = new VerbAction(methods[i].getName(),this.getVerbAnnotation(methods[i]));
+                            if (!map.isExist(verbAction)) {
+                                map.addVerbAction(verbAction);
+                            }
+                            else {
+                                throw new Exception("Il y a une repetition lors de l'annotation de vos methods");
+                            }
                         }
                     }
                 }
@@ -96,10 +107,12 @@ public class Mapping {
         return result;
     }
 
-    public boolean verifMethodURL (String methodName) {
-        boolean result = false;
-        if (this.getVerb().compareToIgnoreCase(methodName) == 0){
-            result = true;
+    public VerbAction verifMethodURL (String verb) {
+        VerbAction result = null;
+        for (VerbAction vA : this.verb_action){
+            if (vA.getVerb().compareToIgnoreCase(verb) == 0){
+                result = vA;
+            }
         }
         return result;
     }
