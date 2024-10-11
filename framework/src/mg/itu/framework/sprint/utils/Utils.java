@@ -44,11 +44,11 @@ public class Utils {
         }
     }
 
-    public void executeMethod (String packageCtrl,Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
+    public void executeMethod (String packageCtrl,VerbAction verbAction,Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
         Object obj = clazz.newInstance();
         this.addSession(obj,request,response);
-        Method method= this.getMethod(obj.getClass().getDeclaredMethods(),map.getMethodName());
+        Method method= this.getMethod(obj.getClass().getDeclaredMethods(), verbAction.getMethodName());
         PrintWriter out = response.getWriter();
 
         List<Object> MethodParameters = new ArrayList<>();
