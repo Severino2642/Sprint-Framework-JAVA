@@ -2,6 +2,7 @@ package mg.itu.framework.sprint.controller;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import mg.itu.framework.sprint.utils.*;
 
+@MultipartConfig
 public class FrontController extends HttpServlet{
 
     private ArrayList<Class<?>> classController;
@@ -54,8 +56,8 @@ public class FrontController extends HttpServlet{
             Mapping map = new Mapping().searchUrl(this.getMaps(),request.getRequestURI());
             VerbAction verbAction = map.verifMethodURL(verb);
             if (verbAction != null) {
-                out.println("ClassName : "+map.getClassName());
-                out.println("MethodName : "+verbAction.getMethodName());
+//                out.println("ClassName : "+map.getClassName());
+//                out.println("MethodName : "+verbAction.getMethodName());
                 String packageCtrl = this.getInitParameter("packageName");
                 new Utils().executeMethod(packageCtrl,verbAction,map,request,response);
             }

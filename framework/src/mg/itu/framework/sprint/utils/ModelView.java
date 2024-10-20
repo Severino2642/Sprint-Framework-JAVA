@@ -1,6 +1,9 @@
 package mg.itu.framework.sprint.utils;
 
+import jakarta.servlet.annotation.MultipartConfig;
+
 import java.util.HashMap;
+
 
 public class ModelView {
     String url;

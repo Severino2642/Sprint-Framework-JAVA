@@ -5,8 +5,10 @@ import com.thoughtworks.paranamer.AdaptiveParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import mg.itu.framework.sprint.annotation.*;
 
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class Utils {
     public static String getFileName(String fileName, String extension) {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
@@ -36,9 +39,9 @@ public class Utils {
                 MySession session = new MySession(request.getSession());
                 Object [] arguments = new Object[1];
                 arguments[0] = session;
-                out.println("1 : "+attr.getName());
+//                out.println("1 : "+attr.getName());
                 obj.getClass().getDeclaredMethod(method_name, MySession.class).invoke(obj,session);
-                out.println("2 : "+attr.getName());
+//                out.println("2 : "+attr.getName());
                 break;
             }
         }
@@ -126,11 +129,16 @@ public class Utils {
                 MySession session = new MySession(request.getSession());
                 result.add(session);
             }
-            if (this.isObject(clazz) && clazz != MySession.class){
+            if(clazz == Part.class){
+                result.add(request.getPart(name_arg));
+            }
+
+            if (this.isObject(clazz) && clazz != MySession.class && clazz != Part.class){
                 out.println("arg :" +name_arg);
                 Object o = clazz.newInstance();
                 result.add(this.prepareObject(name_arg,o,request));
             }
+
             if (!this.isObject(clazz)) {
                 if(request.getParameter(name_arg)!=null){
                     result.add(this.castValueOfParameter(request.getParameter(name_arg),argument[i].getType()));
