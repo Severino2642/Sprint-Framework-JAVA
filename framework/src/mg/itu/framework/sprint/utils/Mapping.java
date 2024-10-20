@@ -1,5 +1,6 @@
 package mg.itu.framework.sprint.utils;
 
+import jakarta.servlet.annotation.MultipartConfig;
 import mg.itu.framework.sprint.annotation.Get;
 import mg.itu.framework.sprint.annotation.Post;
 import mg.itu.framework.sprint.annotation.Url;
@@ -10,6 +11,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
 
 public class Mapping {
     String className;

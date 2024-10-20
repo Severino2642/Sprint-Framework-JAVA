@@ -1,5 +1,8 @@
 package mg.itu.framework.sprint.utils;
 
+import jakarta.servlet.annotation.MultipartConfig;
+
+
 public class VerbAction {
     String methodName;
     String verb;
