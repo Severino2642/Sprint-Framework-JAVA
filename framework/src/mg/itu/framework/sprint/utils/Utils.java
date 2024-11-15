@@ -174,10 +174,10 @@ public class Utils {
             if(clazz == String.class){
                 result = value;
             }
-            if(clazz == Integer.class){
+            if(clazz == int.class){
                 result = Integer.valueOf(value);
             }
-            if(clazz == Double.class){
+            if(clazz == double.class){
                 result = Double.valueOf(value);
             }
             if(clazz == Date.class){
@@ -191,12 +191,16 @@ public class Utils {
 
     public Object prepareObject (String name,Object obj, HttpServletRequest request) throws Exception {
         Field[] attributs = obj.getClass().getDeclaredFields();
+        Validation validation = new Validation();
         for (Field attr : attributs){
             String method_name = "set"+this.maj(attr.getName());
             Method method = obj.getClass().getDeclaredMethod(method_name,attr.getType());
             String input_name = name+":"+attr.getName();
-            if(request.getParameter(input_name)!=null){
-                method.invoke(obj,this.castValueOfParameter(request.getParameter(input_name),attr.getType()));
+            String value = request.getParameter(input_name);
+            if(value!=null){
+                if (validation.checkValidation(attr,value)){
+                    method.invoke(obj,this.castValueOfParameter(value,attr.getType()));
+                }
             }
         }
         return obj;
@@ -210,10 +214,10 @@ public class Utils {
         if(clazz == String.class){
             return false;
         }
-        if(clazz == Integer.class){
+        if(clazz == int.class){
             return false;
         }
-        if(clazz == Double.class){
+        if(clazz == double.class){
             return false;
         }
         if(clazz == Date.class){
