@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 
+@MultipartConfig
 public class Utils {
     public static String getFileName(String fileName, String extension) {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
@@ -49,32 +50,42 @@ public class Utils {
 
     public void executeMethod (String packageCtrl,VerbAction verbAction,Mapping map, HttpServletRequest request, HttpServletResponse response) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException , Exception {
         Class<?> clazz = Class.forName(packageCtrl+"."+map.getClassName());
-        Object obj = clazz.newInstance();
-        this.addSession(obj,request,response);
-        Method method= this.getMethod(obj.getClass().getDeclaredMethods(), verbAction.getMethodName());
-        PrintWriter out = response.getWriter();
+        if (new Auth().check_authClass(clazz,request)){
+            Object obj = clazz.newInstance();
+            this.addSession(obj,request,response);
+            Method method = this.getMethod(obj.getClass().getDeclaredMethods(), verbAction.getMethodName());
+            if (new Auth().check_authMethod(method,request)){
+                PrintWriter out = response.getWriter();
 
-        List<Object> MethodParameters = new ArrayList<>();
-        if (method.getParameters().length > 0) {
-            MethodParameters = this.prepareParameter(obj,method,request,response);
-            if (MethodParameters.size() != method.getParameters().length){
-                throw new Exception("Le nombre de parametre est insuffisant !");
+                List<Object> MethodParameters = new ArrayList<>();
+                if (method.getParameters().length > 0) {
+                    MethodParameters = this.prepareParameter(obj,method,request,response);
+                    if (MethodParameters.size() != method.getParameters().length){
+                        throw new Exception("Le nombre de parametre est insuffisant !");
+                    }
+                }
+                if (method.isAnnotationPresent(RestAPI.class)){
+                    Object result = method.invoke(obj,MethodParameters.toArray(new Object[]{}));
+                    this.returnResponse(result,method,request,response);
+                }
+                else {
+                    if (method.getReturnType() == String.class){
+                        out.println("Execute methods : "+ method.invoke(obj,MethodParameters.toArray(new Object[]{})).toString());
+                    }
+                    if (method.getReturnType() == ModelView.class){
+                        this.sendModelView((ModelView) method.invoke(obj,MethodParameters.toArray(new Object[]{})),request,response);
+                    }
+                    if (method.getReturnType() != String.class && method.getReturnType() != ModelView.class){
+                        throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
+                    }
+                }
             }
-        }
-        if (method.isAnnotationPresent(RestAPI.class)){
-            Object result = method.invoke(obj,MethodParameters.toArray(new Object[]{}));
-            this.returnResponse(result,method,request,response);
+            else {
+                throw new Exception("La method "+method.getName()+" est inaccessible");
+            }
         }
         else {
-            if (method.getReturnType() == String.class){
-                out.println("Execute methods : "+ method.invoke(obj,MethodParameters.toArray(new Object[]{})).toString());
-            }
-            if (method.getReturnType() == ModelView.class){
-                this.sendModelView((ModelView) method.invoke(obj,MethodParameters.toArray(new Object[]{})),request,response);
-            }
-            if (method.getReturnType() != String.class && method.getReturnType() != ModelView.class){
-                throw new Exception("Le type de retour du fonction "+method.getName()+" dans "+clazz.getName()+".java est invalide");
-            }
+            throw new Exception("La class "+clazz.getName()+" est inaccessible");
         }
     }
 
@@ -134,9 +145,14 @@ public class Utils {
             }
 
             if (this.isObject(clazz) && clazz != MySession.class && clazz != Part.class){
-                out.println("arg :" +name_arg);
-                Object o = clazz.newInstance();
-                result.add(this.prepareObject(name_arg,o,request));
+                if (new Auth().check_authClass(clazz,request)){
+                    out.println("arg :" +name_arg);
+                    Object o = clazz.newInstance();
+                    result.add(this.prepareObject(name_arg,o,request,response));
+                }
+                else {
+                    throw new Exception("La class "+clazz.getName()+" est inaccessible");
+                }
             }
 
             if (!this.isObject(clazz)) {
@@ -189,19 +205,33 @@ public class Utils {
         return result;
     }
 
-    public Object prepareObject (String name,Object obj, HttpServletRequest request) throws Exception {
+    public Object prepareObject (String name,Object obj, HttpServletRequest request,HttpServletResponse response) throws Exception {
         Field[] attributs = obj.getClass().getDeclaredFields();
         Validation validation = new Validation();
+        boolean isError = false;
         for (Field attr : attributs){
             String method_name = "set"+this.maj(attr.getName());
             Method method = obj.getClass().getDeclaredMethod(method_name,attr.getType());
             String input_name = name+":"+attr.getName();
             String value = request.getParameter(input_name);
             if(value!=null){
-                if (validation.checkValidation(attr,value)){
-                    method.invoke(obj,this.castValueOfParameter(value,attr.getType()));
+                String error = validation.checkValidation(attr,value);
+                if (error==null){
+                    Object thing = this.castValueOfParameter(value,attr.getType());
+                    method.invoke(obj,thing);
+                    request.setAttribute(input_name,new Parametre(true,value));
+                }
+                else {
+                    isError = true;
+                    request.setAttribute(input_name,new Parametre(false,error));
                 }
             }
+        }
+        if (isError){
+            String path = validation.getPagePrecedent(request);
+            String relativePath = path.substring(path.lastIndexOf("/")+1);
+            RequestDispatcher dispat = request.getServletContext().getRequestDispatcher("/"+relativePath+"?pagePrecedent="+path);
+            dispat.forward(request,response);
         }
         return obj;
     }
